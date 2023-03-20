@@ -19,6 +19,8 @@ import java.util.Set;
 public class Recipe {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipe_id_seq")
+    @SequenceGenerator(name = "recipe_id_seq", sequenceName = "recipe_id_seq", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

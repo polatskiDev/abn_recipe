@@ -2,10 +2,7 @@ package nl.abnamro.assessment.recipe.domain;
 
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * @author Orhan Polat
@@ -20,6 +17,8 @@ import javax.persistence.Table;
 public class Ingredients {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ingredients_id_seq")
+    @SequenceGenerator(name = "ingredients_id_seq", sequenceName = "ingredients_id_seq", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

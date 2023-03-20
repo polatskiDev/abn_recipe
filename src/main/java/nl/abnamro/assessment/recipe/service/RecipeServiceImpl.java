@@ -33,7 +33,24 @@ public class RecipeServiceImpl implements IRecipeService{
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Recipe saveRecipe(RecipeDto recipeDto) {
+        LOG.info("saveRecipe!!");
+        try{
+            Recipe recipe = convertToEntity(recipeDto);
+            recipeRepository.save(recipe);
+            return recipe;
+        } catch (Exception e) {
+            LOG.error("Error occured during saving recipe!!");
+        }
+        return null;
+    }
+
     private RecipeDto convertToDto(Recipe recipe) {
         return modelMapper.map(recipe, RecipeDto.class);
+    }
+
+    private Recipe convertToEntity(RecipeDto recipeDto) {
+        return modelMapper.map(recipeDto, Recipe.class);
     }
 }
