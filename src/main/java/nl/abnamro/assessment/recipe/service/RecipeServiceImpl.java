@@ -14,8 +14,7 @@ import org.apache.log4j.Logger;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import javax.persistence.NoResultException;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -48,7 +47,7 @@ public class RecipeServiceImpl implements IRecipeService{
                 .collect(Collectors.toList());
 
         return RestResponse.of(dtoList, HttpStatus.OK,
-                messageComponent.getInfoMessage("success.findAll"));
+                messageComponent.getInfoMessage("success.getRecipe"));
     }
 
     @Override
@@ -77,8 +76,11 @@ public class RecipeServiceImpl implements IRecipeService{
     public RestResponse updateRecipe(Long recipeId, RecipeDto recipeDto) {
         LOG.info("updateRecipe!!");
 
-        try{
-            Recipe recipe = recipeRepository.findById(recipeId).orElseThrow(NoResultException::new);
+        try {
+            if (recipeDto.getId() != null && recipeDto.getId() != recipeId) {
+                throw new InvalidKeyException();
+            }
+            Recipe recipe = recipeRepository.findById(recipeId).orElseThrow(NoSuchElementException::new);
 
             recipe.setName(recipeDto.getName());
             recipe.setServingNumber(recipeDto.getServingNumber());
@@ -93,8 +95,21 @@ public class RecipeServiceImpl implements IRecipeService{
 
             return RestResponse.of(dtoList, HttpStatus.NO_CONTENT,
                     messageComponent.getInfoMessage("success.Update"));
+        } catch (InvalidKeyException e){
 
-        }catch (Exception e) {
+            LOG.warn("There is no data with this ID: " + recipeId);
+
+            return RestResponse.of(null, HttpStatus.NOT_ACCEPTABLE,
+                    messageComponent.getErrorMessage("error.typeMismatch"));
+
+        } catch(NoSuchElementException e) {
+
+            LOG.warn("There is no data with this ID: " + recipeId);
+
+            return RestResponse.of(null, HttpStatus.NOT_FOUND,
+                    messageComponent.getErrorMessage("error.NoDataFound"));
+
+        } catch (Exception e) {
             LOG.error("Error occurred during updating recipe!!");
 
             return RestResponse.of(null, HttpStatus.BAD_REQUEST,
@@ -117,13 +132,39 @@ public class RecipeServiceImpl implements IRecipeService{
             LOG.warn("There is no data with this ID: " + recipeId);
 
             return RestResponse.of(null, HttpStatus.NOT_FOUND,
-                    messageComponent.getErrorMessage("error.DeleteNoData"));
+                    messageComponent.getErrorMessage("error.NoDataFound"));
 
         } catch (Exception e) {
-            LOG.error("Error occured during deleting recipe with ID: " + recipeId);
+            LOG.error("Error occurred during deleting recipe with ID: " + recipeId);
 
             return RestResponse.of(null, HttpStatus.BAD_REQUEST,
                     messageComponent.getErrorMessage("error.Delete"));
+        }
+    }
+
+    @Override
+    public RestResponse findRecipe(Long recipeId) {
+
+        try {
+            Recipe recipe = recipeRepository.findById(recipeId).orElseThrow(NoSuchElementException::new);
+
+            List<RecipeDto> dtoList = new ArrayList<>();
+            dtoList.add(convertRecipeToDto(recipe));
+
+            return RestResponse.of(dtoList, HttpStatus.OK,
+                    messageComponent.getInfoMessage("success.getRecipe"));
+
+        } catch (NoSuchElementException e) {
+            LOG.warn("There is no data with this ID: " + recipeId);
+
+            return RestResponse.of(null, HttpStatus.NOT_FOUND,
+                    messageComponent.getErrorMessage("error.NoDataFound"));
+
+        } catch (Exception e) {
+            LOG.error("Error occurred during findRecipe with ID: " + recipeId);
+
+            return RestResponse.of(null, HttpStatus.BAD_REQUEST,
+                    messageComponent.getErrorMessage("error.findRecipe"));
         }
     }
 

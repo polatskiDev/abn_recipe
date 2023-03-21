@@ -44,4 +44,10 @@ public class RecipeController {
         LOG.info("Delete Recipe with ID: " + recipeId);
         return ResponseEntity.ok().body(recipeService.deleteRecipe(recipeId));
     }
+
+    @GetMapping("/{recipeId}")
+    public ResponseEntity<RestResponse> getRecipeById(@PathVariable("recipeId") Long recipeId) {
+        LOG.info("Get Recipe By Id");
+        return ResponseEntity.ok().body(recipeService.findRecipe(recipeId));
+    }
 }

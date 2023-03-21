@@ -15,4 +15,6 @@ public interface IRecipeService {
     RestResponse updateRecipe(Long recipeId, RecipeDto recipeDto);
 
     RestResponse deleteRecipe(Long recipeId);
+
+    RestResponse findRecipe(Long recipeId);
 }
