@@ -14,4 +14,6 @@ public interface IRecipeService {
     RecipeDto saveRecipe(RecipeDto recipeDto);
 
     RecipeDto updateRecipe(Long recipeId, RecipeDto recipeDto);
+
+    RecipeDto deleteRecipe(Long recipeId);
 }

@@ -12,8 +12,8 @@ import org.apache.log4j.Logger;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -69,6 +69,21 @@ public class RecipeServiceImpl implements IRecipeService{
             return convertRecipeToDto(recipeRepository.save(recipe));
         }catch (Exception e) {
             LOG.error("Error occured during updating recipe!!");
+        }
+        return null;
+    }
+
+    @Override
+    public RecipeDto deleteRecipe(Long recipeId) {
+        LOG.info("deleteRecipe!!!");
+        try {
+            Recipe recipe = recipeRepository.findById(recipeId).orElseThrow();
+            recipeRepository.delete(recipe);
+            return convertRecipeToDto(recipe);
+        } catch (NoSuchElementException e) {
+            LOG.warn("There is no data with this ID: " + recipeId);
+        } catch (Exception e) {
+            LOG.error("Error occured during deleting recipe with ID: " + recipeId);
         }
         return null;
     }

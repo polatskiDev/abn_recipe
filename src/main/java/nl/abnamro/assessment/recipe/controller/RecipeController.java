@@ -40,4 +40,10 @@ public class RecipeController {
         LOG.info("Update Recipe with ID: " + recipeId);
         return new ResponseEntity<>(recipeService.updateRecipe(recipeId, recipeDto), HttpStatus.NO_CONTENT);
     }
+
+    @DeleteMapping("/{recipeId}")
+    public ResponseEntity deleteRecipe(@PathVariable("recipeId") Long recipeId) {
+        LOG.info("Delete Recipe with ID: " + recipeId);
+        return new ResponseEntity<>(recipeService.deleteRecipe(recipeId),HttpStatus.NO_CONTENT);
+    }
 }
