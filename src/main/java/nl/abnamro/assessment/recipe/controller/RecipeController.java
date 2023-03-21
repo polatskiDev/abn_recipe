@@ -34,4 +34,10 @@ public class RecipeController {
         LOG.info("Save New Recipe");
         return new ResponseEntity<>(recipeService.saveRecipe(recipeDto), HttpStatus.CREATED);
     }
+
+    @PutMapping("/{recipeId}")
+    public ResponseEntity updateRecipe(@PathVariable("recipeId") Long recipeId, @RequestBody @Validated RecipeDto recipeDto) {
+        LOG.info("Update Recipe with ID: " + recipeId);
+        return new ResponseEntity<>(recipeService.updateRecipe(recipeId, recipeDto), HttpStatus.NO_CONTENT);
+    }
 }
