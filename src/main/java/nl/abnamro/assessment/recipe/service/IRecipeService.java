@@ -1,19 +1,18 @@
 package nl.abnamro.assessment.recipe.service;
 
+import nl.abnamro.assessment.recipe.message.RestResponse;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
-
-import java.util.List;
 
 /**
  * @author Orhan Polat
  */
 public interface IRecipeService {
 
-    List<RecipeDto> findAll();
+    RestResponse findAll();
 
-    RecipeDto saveRecipe(RecipeDto recipeDto);
+    RestResponse saveRecipe(RecipeDto recipeDto);
 
-    RecipeDto updateRecipe(Long recipeId, RecipeDto recipeDto);
+    RestResponse updateRecipe(Long recipeId, RecipeDto recipeDto);
 
-    RecipeDto deleteRecipe(Long recipeId);
+    RestResponse deleteRecipe(Long recipeId);
 }
