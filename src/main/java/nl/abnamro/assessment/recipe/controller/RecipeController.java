@@ -131,6 +131,7 @@ public class RecipeController {
                                                       @Parameter(description = "instruction within recipe")
                                                           @RequestParam(value = "instructionText", required = false) String instructionText) {
 
+        LOG.info("Search Recipes With Criteria");
         List<SearchCriteria> criteriaList = new ArrayList<>();
 
         if (isVegetarian != null) {

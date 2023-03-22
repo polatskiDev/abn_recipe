@@ -166,6 +166,8 @@ public class RecipeServiceImpl implements IRecipeService{
     @Override
     public RestResponse<List<RecipeDto>> searchRecipes(List<SearchCriteria> criteriaList){
 
+        LOG.info("searchRecipes!!");
+
         RecipeSpecification spec = new RecipeSpecification(criteriaList);
         List<RecipeDto> dtoList = recipeRepository.findAll(spec).stream().map(this::convertRecipeToDto)
                 .collect(Collectors.toList());
