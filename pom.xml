@@ -15,8 +15,8 @@
     <description>recipe</description>
     <properties>
         <java.version>11</java.version>
-        <log4j.version>1.2.17</log4j.version>
         <modelmapper.version>3.1.1</modelmapper.version>
+        <springdoc.version>1.6.15</springdoc.version>
     </properties>
     <dependencies>
         <dependency>
@@ -46,11 +46,6 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
@@ -68,6 +63,11 @@
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
     </dependencies>
 
