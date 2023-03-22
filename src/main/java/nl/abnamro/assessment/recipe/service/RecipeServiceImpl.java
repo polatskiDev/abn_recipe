@@ -163,6 +163,16 @@ public class RecipeServiceImpl implements IRecipeService{
         }
     }
 
+    @Override
+    public RestResponse<List<RecipeDto>> searchRecipes(List<SearchCriteria> criteriaList){
+
+        RecipeSpecification spec = new RecipeSpecification(criteriaList);
+        List<RecipeDto> dtoList = recipeRepository.findAll(spec).stream().map(this::convertRecipeToDto)
+                .collect(Collectors.toList());
+        return RestResponse.of(dtoList, HttpStatus.OK,
+                messageComponent.getInfoMessage("success.getRecipe"));
+    }
+
     private Set<Ingredients> convertIngredients(Set<IngredientsDto> ingredients) {
 
         return ingredients.stream().map(
