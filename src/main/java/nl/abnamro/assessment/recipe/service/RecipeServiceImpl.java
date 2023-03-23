@@ -1,25 +1,23 @@
 package nl.abnamro.assessment.recipe.service;
 
 import lombok.RequiredArgsConstructor;
+import nl.abnamro.assessment.recipe.component.ObjectMapperUtils;
 import nl.abnamro.assessment.recipe.domain.Ingredients;
 import nl.abnamro.assessment.recipe.domain.Instructions;
 import nl.abnamro.assessment.recipe.domain.Recipe;
 import nl.abnamro.assessment.recipe.message.MessageComponent;
 import nl.abnamro.assessment.recipe.message.RestResponse;
-import nl.abnamro.assessment.recipe.model.IngredientsDto;
-import nl.abnamro.assessment.recipe.model.InstructionsDto;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
 import nl.abnamro.assessment.recipe.repository.RecipeRepository;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.modelmapper.ModelMapper;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
 import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -32,32 +30,31 @@ public class RecipeServiceImpl implements IRecipeService{
     private static final Logger LOG = LogManager.getLogger(RecipeServiceImpl.class);
 
     private final RecipeRepository recipeRepository;
-    private final ModelMapper modelMapper;
     private final MessageComponent messageComponent;
 
+    ObjectMapperUtils objectMapperUtils = new ObjectMapperUtils();
+
     @Override
-    public RestResponse<List<RecipeDto>> findAll() {
+    public RestResponse<Set<RecipeDto>> findAll() {
         LOG.info("findAll");
 
-        List<RecipeDto> dtoList = recipeRepository.findAll().stream()
-                .map(this::convertRecipeToDto)
-                .collect(Collectors.toList());
+        Set<RecipeDto> dtoList = objectMapperUtils.mapAll(recipeRepository.findAll(), RecipeDto.class);
 
         return RestResponse.of(dtoList, HttpStatus.OK,
                 messageComponent.getInfoMessage("success.getRecipe"));
     }
 
     @Override
-    public RestResponse<List<RecipeDto>> saveRecipe(RecipeDto recipeDto) {
+    public RestResponse<RecipeDto> saveRecipe(RecipeDto recipeDto) {
         LOG.info("saveRecipe");
 
         try {
-            Recipe recipe = convertRecipeToEntity(recipeDto);
+            Recipe recipe = objectMapperUtils.map(recipeDto, Recipe.class);
             recipeRepository.save(recipe);
 
-            List<RecipeDto> dtoList = List.of(convertRecipeToDto(recipe));
+            RecipeDto savedDto = objectMapperUtils.map(recipe, RecipeDto.class);
 
-            return RestResponse.of(dtoList, HttpStatus.CREATED,
+            return RestResponse.of(savedDto, HttpStatus.CREATED,
                     messageComponent.getInfoMessage("success.Save"));
 
         } catch (Exception e) {
@@ -83,10 +80,10 @@ public class RecipeServiceImpl implements IRecipeService{
             recipe.setIsVegetarian(recipeDto.getIsVegetarian());
             recipe.getInstructions().clear();
             recipe.getIngredients().clear();
-            recipe.getIngredients().addAll(convertIngredients(recipeDto.getIngredients()));
-            recipe.getInstructions().addAll(convertInstructions(recipeDto.getInstructions()));
+            recipe.getIngredients().addAll(objectMapperUtils.mapAll(recipeDto.getIngredients(), Ingredients.class));
+            recipe.getInstructions().addAll(objectMapperUtils.mapAll(recipeDto.getInstructions(),Instructions.class));
 
-            RecipeDto savedRecipeDto = convertRecipeToDto(recipeRepository.save(recipe));
+            RecipeDto savedRecipeDto = objectMapperUtils.map(recipeRepository.save(recipe), RecipeDto.class);
 
             return RestResponse.of(savedRecipeDto, HttpStatus.NO_CONTENT,
                     messageComponent.getInfoMessage("success.Update"));
@@ -146,7 +143,7 @@ public class RecipeServiceImpl implements IRecipeService{
         try {
             Recipe recipe = recipeRepository.findById(recipeId).orElseThrow(NoSuchElementException::new);
 
-            return RestResponse.of(convertRecipeToDto(recipe), HttpStatus.OK,
+            return RestResponse.of(objectMapperUtils.map(recipe, RecipeDto.class), HttpStatus.OK,
                     messageComponent.getInfoMessage("success.getRecipe"));
 
         } catch (NoSuchElementException e) {
@@ -164,36 +161,14 @@ public class RecipeServiceImpl implements IRecipeService{
     }
 
     @Override
-    public RestResponse<List<RecipeDto>> searchRecipes(List<SearchCriteria> criteriaList){
+    public RestResponse<Set<RecipeDto>> searchRecipes(List<SearchCriteria> criteriaList){
 
         LOG.info("searchRecipes!!");
 
         RecipeSpecification spec = new RecipeSpecification(criteriaList);
-        List<RecipeDto> dtoList = recipeRepository.findAll(spec).stream().map(this::convertRecipeToDto)
-                .collect(Collectors.toList());
+        Set<RecipeDto> dtoList = objectMapperUtils.mapAll(recipeRepository.findAll(spec), RecipeDto.class);
         return RestResponse.of(dtoList, HttpStatus.OK,
                 messageComponent.getInfoMessage("success.getRecipe"));
-    }
-
-    private Set<Ingredients> convertIngredients(Set<IngredientsDto> ingredients) {
-
-        return ingredients.stream().map(
-                ingredientsDto -> modelMapper.map(ingredientsDto, Ingredients.class))
-                .collect(Collectors.toSet());
-    }
-
-    private Set<Instructions> convertInstructions(Set<InstructionsDto> instructions) {
-
-        return instructions.stream().map(
-                instructionsDto -> modelMapper.map(instructionsDto, Instructions.class))
-                .collect(Collectors.toSet());
-    }
-
-    private Recipe convertRecipeToEntity(RecipeDto recipeDto) {
-        return modelMapper.map(recipeDto, Recipe.class);
-    }
-    private RecipeDto convertRecipeToDto(Recipe recipe) {
-        return modelMapper.map(recipe, RecipeDto.class);
     }
 }
 
