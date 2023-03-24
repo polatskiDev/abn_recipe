@@ -41,9 +41,11 @@ To create this project below technologies are being used:
 To install the project;
 1. Clone the repository from this url [Recipe Application](https://github.com/polatskiDev/abn_recipe)
 2. You should have docker installed in your local machine. You can install from [this](https://docs.docker.com/get-docker/) url.
-3. After running docker on your system, from terminal locate to the folder of docker-compose.yml file(in this project it is under the root folder which is recipe) and then run `docker-compose up`
-4. Or In terminal you can run this command `docker-compose -f <location of the document>/docker-compose.yml up -d`
-5. After successful run, go to this url `http://localhost:8081/swagger-ui/index.html` to test API endpoints via Swagger UI.
+3. Run docker on your local.
+4. locate the project folder where pom.xml and docker-compose.yml exits.
+5. run `mvn install` to create jar file.
+6. After above install finished, run this command `docker-compose up`
+7. After successful run, go to this url `http://localhost:8081/swagger-ui/index.html` to test API endpoints via Swagger UI.
 
 # Usage
 There are 6 endpoints in this project. Details of the usage is below.
