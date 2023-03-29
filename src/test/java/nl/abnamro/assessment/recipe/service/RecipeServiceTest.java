@@ -5,8 +5,6 @@ import nl.abnamro.assessment.recipe.domain.Ingredients;
 import nl.abnamro.assessment.recipe.domain.Instructions;
 import nl.abnamro.assessment.recipe.domain.Recipe;
 import nl.abnamro.assessment.recipe.enums.SearchOperation;
-import nl.abnamro.assessment.recipe.message.MessageComponent;
-import nl.abnamro.assessment.recipe.message.RestResponse;
 import nl.abnamro.assessment.recipe.model.IngredientsDto;
 import nl.abnamro.assessment.recipe.model.InstructionsDto;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
@@ -17,10 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 
-import java.security.InvalidKeyException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,9 +39,6 @@ public class RecipeServiceTest {
 
     @InjectMocks
     RecipeServiceImpl recipeService;
-
-    @Mock
-    MessageComponent messageComponent;
 
     @InjectMocks
     private ObjectMapperUtils objectMapperUtils;
@@ -96,7 +92,7 @@ public class RecipeServiceTest {
 
         when(recipeRepository.findAll()).thenReturn(recipeList);
 
-        Set<RecipeDto> result = recipeService.findAll().getData();
+        Set<RecipeDto> result = recipeService.findAll();
 
         assertThat(result).isEqualTo(recipeDtoSet);
     }
@@ -105,10 +101,9 @@ public class RecipeServiceTest {
     public void testSaveRecipe() {
         when(recipeRepository.save(any())).thenReturn(recipe);
 
-        RestResponse<RecipeDto> response = recipeService.saveRecipe(recipeDto);
+        RecipeDto response = recipeService.saveRecipe(recipeDto);
 
-        assertEquals(response.getStatus(), HttpStatus.CREATED);
-        assertEquals(response.getData(), recipeDto);
+        assertEquals(response, recipeDto);
     }
 
     @Test
@@ -118,16 +113,15 @@ public class RecipeServiceTest {
         when(recipeRepository.save(any(Recipe.class))).thenReturn(recipe);
 
         // Act
-        RestResponse<RecipeDto> response = recipeService.saveRecipe(recipeDto);
+        RecipeDto response = recipeService.saveRecipe(recipeDto);
 
         // Assert
-        assertEquals(HttpStatus.CREATED, response.getStatus());
-        assertNotNull(response.getData());
+        assertNotNull(response);
         verify(recipeRepository, times(1)).save(any(Recipe.class));
     }
 
     @Test
-    public void testUpdateRecipe() throws InvalidKeyException {
+    public void testUpdateRecipe() {
         // Arrange
         when(recipeRepository.findById(anyLong())).thenReturn(java.util.Optional.of(recipe));
 
@@ -136,10 +130,9 @@ public class RecipeServiceTest {
 
         when(recipeRepository.save(any())).thenReturn(recipe);
 
-        RestResponse<RecipeDto> response = recipeService.updateRecipe(1L, recipeDto);
+        RecipeDto response = recipeService.updateRecipe(1L, recipeDto);
 
         // Assert
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatus());
         verify(recipeRepository, times(1)).findById(anyLong());
     }
 
@@ -150,25 +143,23 @@ public class RecipeServiceTest {
         when(recipeRepository.findById(anyLong())).thenReturn(java.util.Optional.of(recipe));
 
         // Act
-        RestResponse<String> response = recipeService.deleteRecipe(1L);
+        String response = recipeService.deleteRecipe(1L);
 
         // Assert
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatus());
         verify(recipeRepository, times(1)).delete(any(Recipe.class));
     }
 
     @Test
     public void testFindRecipe() {
         // Arrange
-        Recipe recipe = new Recipe();
         when(recipeRepository.findById(anyLong())).thenReturn(java.util.Optional.of(recipe));
 
         // Act
-        RestResponse<RecipeDto> response = recipeService.findRecipe(1L);
+        RecipeDto response = recipeService.findRecipe(1L);
 
         // Assert
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getData());
+        assertNotNull(response);
+        assertEquals(response.getId(), 1L);
         verify(recipeRepository, times(1)).findById(anyLong());
     }
 
@@ -176,13 +167,12 @@ public class RecipeServiceTest {
     public void testSearchRecipes() {
         // Arrange
         SearchCriteria searchCriteria = new SearchCriteria("name", SearchOperation.EQUALITY, "Pasta");
-        List<SearchCriteria> criteriaList = Arrays.asList(searchCriteria);
+        List<SearchCriteria> criteriaList = List.of(searchCriteria);
 
         // Act
-        RestResponse<Set<RecipeDto>> response = recipeService.searchRecipes(criteriaList);
+        Set<RecipeDto> response = recipeService.searchRecipes(criteriaList);
 
         // Assert
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getData());
+        assertNotNull(response);
     }
 }

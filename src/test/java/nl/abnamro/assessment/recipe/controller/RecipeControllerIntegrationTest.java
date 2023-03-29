@@ -1,6 +1,6 @@
 package nl.abnamro.assessment.recipe.controller;
 
-import nl.abnamro.assessment.recipe.message.RestResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.abnamro.assessment.recipe.model.IngredientsDto;
 import nl.abnamro.assessment.recipe.model.InstructionsDto;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
@@ -8,44 +8,56 @@ import nl.abnamro.assessment.recipe.service.IRecipeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Orhan Polat
  */
 @ExtendWith(SpringExtension.class)
+@AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 public class RecipeControllerIntegrationTest {
-
-    @Autowired
-    private TestRestTemplate restTemplate;
 
     @Autowired
     private IRecipeService recipeService;
 
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
-    public void testFindAll() {
-        ResponseEntity<RestResponse> responseEntity = restTemplate.getForEntity("/api/v1/recipe", RestResponse.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody().getData()).isNotNull();
-        assertThat(responseEntity.getBody().getData()).isInstanceOf(List.class);
-        assertThat(((List<?>) responseEntity.getBody().getData()).size()).isGreaterThanOrEqualTo(0);
+    public void testFindAll() throws Exception {
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/recipe")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        RecipeDto[] recipeDto = objectMapper.readValue(responseBody, RecipeDto[].class);
+        assertThat(recipeDto).isNotNull();
+        assertThat(recipeDto[0].getId()).isNotNull();
     }
 
     @Test
-    public void testSaveRecipe() {
+    public void testSaveRecipe() throws Exception {
 
         IngredientsDto ingredientsDto = IngredientsDto.builder()
                 .ingredientName("Ingredient1").build();
@@ -58,24 +70,21 @@ public class RecipeControllerIntegrationTest {
                 .ingredients(Set.of(ingredientsDto))
                 .instructions(Set.of(instructionsDto1)).build();
 
-        HttpEntity<RecipeDto> request = new HttpEntity<>(recipeDto1);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/recipe")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(recipeDto1)))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        ResponseEntity<RestResponse> responseEntity = restTemplate.postForEntity("/api/v1/recipe", request, RestResponse.class);
-
-        LinkedHashMap<String, Object> data = (LinkedHashMap<String, Object>) responseEntity.getBody().getData();
-
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody()).isNotNull();
-        assertThat((Integer) data.get("id")).isNotNull();
-        assertThat((List<LinkedHashMap<String, Object>>)data.get("ingredients")).isNotNull();
-        assertThat((List<LinkedHashMap<String, Object>>)data.get("instructions")).isNotNull();
-        assertThat((Boolean) data.get("isVegetarian")).isEqualTo(true);
-        assertThat((String) data.get("name")).isEqualTo("Recipe 1");
-        assertThat((Integer) data.get("servingNumber")).isEqualTo(2);
+        String responseBody = result.getResponse().getContentAsString();
+        RecipeDto savedRecipe = objectMapper.readValue(responseBody, RecipeDto.class);
+        assertThat(savedRecipe).isNotNull();
+        assertThat(savedRecipe.getId()).isNotNull();
+        assertThat(savedRecipe.getName()).isEqualTo(recipeDto1.getName());
     }
 
     @Test
-    public void testUpdateRecipe() {
+    public void testUpdateRecipe() throws Exception {
 
         IngredientsDto ingredientsDto1 = IngredientsDto.builder()
                 .ingredientName("Ingredient1").build();
@@ -87,9 +96,9 @@ public class RecipeControllerIntegrationTest {
                 .isVegetarian(true)
                 .ingredients(Set.of(ingredientsDto1))
                 .instructions(Set.of(instructionsDto1)).build();
-        RestResponse<RecipeDto> restResponse = recipeService.saveRecipe(recipeDto1);
+        RecipeDto saveRecipe = recipeService.saveRecipe(recipeDto1);
 
-        Long saveRecipeId = restResponse.getData().getId();
+        Long saveRecipeId = saveRecipe.getId();
 
         IngredientsDto ingredientsDto = IngredientsDto.builder()
                 .ingredientName("Ingredient1 Updated").build();
@@ -103,19 +112,20 @@ public class RecipeControllerIntegrationTest {
                 .ingredients(Set.of(ingredientsDto))
                 .instructions(Set.of(instructionsDto)).build();
 
-        HttpEntity<RecipeDto> request = new HttpEntity<>(recipeDto);
-        ResponseEntity<RestResponse> responseEntity = restTemplate.exchange("/api/v1/recipe/" + saveRecipeId, HttpMethod.PUT, request, RestResponse.class);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/recipe/{recipeId}", saveRecipe.getId())
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(recipeDto)))
+                .andExpect(status().isNoContent())
+                .andReturn();
 
-        LinkedHashMap<String, Object> data = (LinkedHashMap<String, Object>) responseEntity.getBody().getData();
-
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody().getData()).isNotNull();
-        assertThat((Integer) data.get("id")).isEqualTo(saveRecipeId.intValue());
-        assertThat((String) data.get("name")).isEqualTo("Recipe 1 Updated");
+        // Then
+        RecipeDto actualRecipe = recipeService.findRecipe(saveRecipe.getId());
+        assertThat(actualRecipe).isNotNull();
+        assertThat(actualRecipe.getName()).isEqualTo(recipeDto.getName());
     }
 
     @Test
-    public void testDeleteRecipe() {
+    public void testDeleteRecipe() throws Exception {
         IngredientsDto ingredientsDto = IngredientsDto.builder()
                 .ingredientName("IngredientDelete").build();
         InstructionsDto instructionsDto1 = InstructionsDto.builder()
@@ -126,16 +136,26 @@ public class RecipeControllerIntegrationTest {
                 .isVegetarian(true)
                 .ingredients(Set.of(ingredientsDto))
                 .instructions(Set.of(instructionsDto1)).build();
-        RestResponse<RecipeDto> savedRecipeDto = recipeService.saveRecipe(recipeDto1);
-        Long savedRecipeId = savedRecipeDto.getData().getId();
+        RecipeDto savedRecipeDto = recipeService.saveRecipe(recipeDto1);
 
-        ResponseEntity<RestResponse> responseEntity = restTemplate.exchange("/api/v1/recipe/" +savedRecipeId, HttpMethod.DELETE, null, RestResponse.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody().getData()).isEqualTo("");
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/recipe/{recipeId}", savedRecipeDto.getId())
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        // Then
+        Exception exception = assertThrows(NotFoundException.class, () -> {
+            recipeService.findRecipe(savedRecipeDto.getId());
+        });
+
+        String expectedMessage = "NotFoundException";
+        String actualMessage = exception.getClass().getName();
+
+        assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
-    public void testGetRecipeById() {
+    public void testGetRecipeById() throws Exception {
 
         IngredientsDto ingredientsDto2 = IngredientsDto.builder()
                 .ingredientName("Ingredient2").build();
@@ -148,19 +168,23 @@ public class RecipeControllerIntegrationTest {
                 .ingredients(Set.of(ingredientsDto2))
                 .instructions(Set.of(instructionsDto2)).build();
 
-        RestResponse<RecipeDto> savedRecipe2 = recipeService.saveRecipe(recipeDto2);
-        Integer savedRecipeId = savedRecipe2.getData().getId().intValue();
+        RecipeDto savedRecipe2 = recipeService.saveRecipe(recipeDto2);
 
-        ResponseEntity<RestResponse> responseEntity = restTemplate.getForEntity("/api/v1/recipe/" + savedRecipeId, RestResponse.class);
-        LinkedHashMap<String, Object> data = (LinkedHashMap<String, Object>) responseEntity.getBody().getData();
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/recipe/{recipeId}", savedRecipe2.getId())
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody().getData()).isNotNull();
-        assertThat((Integer) data.get("id")).isEqualTo(savedRecipeId);
+        // Then
+        String responseBody = result.getResponse().getContentAsString();
+        RecipeDto actualRecipe = objectMapper.readValue(responseBody, RecipeDto.class);
+        assertThat(actualRecipe).isNotNull();
+        assertThat(actualRecipe.getId()).isEqualTo(savedRecipe2.getId());
+        assertThat(actualRecipe.getName()).isEqualTo(savedRecipe2.getName());
     }
 
     @Test
-    public void testSearchRecipes() {
+    public void testSearchRecipes() throws Exception {
 
         IngredientsDto ingredientsDto2 = IngredientsDto.builder()
                 .ingredientName("IngredientSearch").build();
@@ -168,22 +192,21 @@ public class RecipeControllerIntegrationTest {
                 .description("InstructionSearch").build();
         RecipeDto recipeDto2 = RecipeDto.builder()
                 .name("Recipe Search")
-                .servingNumber(10)
+                .servingNumber(11)
                 .isVegetarian(false)
                 .ingredients(Set.of(ingredientsDto2))
                 .instructions(Set.of(instructionsDto2)).build();
         recipeService.saveRecipe(recipeDto2);
 
-        // Test with one search criteria
-        ResponseEntity<RestResponse> responseEntity1 = restTemplate.getForEntity("/api/v1/recipe/search?servingNumber=10", RestResponse.class);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/recipe/search")
+                        .param("isVegetarian", "false")
+                        .param("servingNumber", "10"))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        LinkedHashMap<String, Object> data = (LinkedHashMap<String, Object>)
-                ((List<?>) responseEntity1.getBody().getData()).get(0);
-
-        assertThat(responseEntity1.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity1.getBody().getData()).isNotNull();
-        assertThat(responseEntity1.getBody().getData()).isInstanceOf(List.class);
-        assertThat(((List<?>) responseEntity1.getBody().getData()).size()).isGreaterThanOrEqualTo(1);
-        assertThat(data.get("servingNumber")).isEqualTo(10);
+        String responseBody = result.getResponse().getContentAsString();
+        RecipeDto[] actualRecipes = objectMapper.readValue(responseBody, RecipeDto[].class);
+        assertThat(actualRecipes).hasAtLeastOneElementOfType(RecipeDto.class);
+        assertThat(actualRecipes[0].getName()).isEqualTo(recipeDto2.getName());
     }
 }

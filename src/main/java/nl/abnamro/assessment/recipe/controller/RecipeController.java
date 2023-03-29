@@ -9,19 +9,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import nl.abnamro.assessment.recipe.domain.Recipe;
 import nl.abnamro.assessment.recipe.enums.SearchOperation;
-import nl.abnamro.assessment.recipe.message.RestResponse;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
 import nl.abnamro.assessment.recipe.service.IRecipeService;
-
 import nl.abnamro.assessment.recipe.service.SearchCriteria;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Orhan Polat
@@ -40,9 +40,9 @@ public class RecipeController {
             content = { @Content(mediaType = "application/json",
             schema = @Schema(implementation = Recipe.class))})
     @GetMapping
-    public ResponseEntity<RestResponse> findAll() {
+    public ResponseEntity<Set<RecipeDto>> findAll() {
         LOG.info("Get All Recipe Information..");
-        return ResponseEntity.ok(recipeService.findAll());
+        return new ResponseEntity<>(recipeService.findAll(), HttpStatus.OK);
     }
 
     @Operation(summary = "Save recipe with given Request Body")
@@ -50,9 +50,9 @@ public class RecipeController {
             @ApiResponse(responseCode = "400" , description = "Recipe could not saved", content= @Content)
     })
     @PostMapping
-    public ResponseEntity<RestResponse> saveRecipe(@Parameter(description = "Request of recipe to be saved") @RequestBody @Validated RecipeDto recipeDto) {
+    public ResponseEntity saveRecipe(@Parameter(description = "Request of recipe to be saved") @RequestBody @Validated RecipeDto recipeDto) {
         LOG.info("Save New Recipe");
-        return ResponseEntity.ok(recipeService.saveRecipe(recipeDto));
+        return new ResponseEntity<>(recipeService.saveRecipe(recipeDto), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update recipe by its id")
@@ -63,10 +63,10 @@ public class RecipeController {
             @ApiResponse(responseCode = "400" , description = "Recipe could not updated", content= @Content)
     })
     @PutMapping("/{recipeId}")
-    public ResponseEntity<RestResponse> updateRecipe(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId,
+    public ResponseEntity updateRecipe(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId,
                                                      @Parameter(description = "Recipe Object to be updated") @RequestBody @Validated RecipeDto recipeDto) {
         LOG.info("Update Recipe with ID: " + recipeId);
-        return ResponseEntity.ok(recipeService.updateRecipe(recipeId, recipeDto));
+        return new ResponseEntity<>(recipeService.updateRecipe(recipeId, recipeDto), HttpStatus.NO_CONTENT);
     }
 
     @Operation(summary = "Delete recipe by its id")
@@ -76,9 +76,9 @@ public class RecipeController {
             @ApiResponse(responseCode = "400" , description = "Recipe could not deleted", content= @Content)
     })
     @DeleteMapping("/{recipeId}")
-    public ResponseEntity<RestResponse> deleteRecipe(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId) {
+    public ResponseEntity deleteRecipe(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId) {
         LOG.info("Delete Recipe with ID: " + recipeId);
-        return ResponseEntity.ok(recipeService.deleteRecipe(recipeId));
+        return new ResponseEntity<>(recipeService.deleteRecipe(recipeId), HttpStatus.NO_CONTENT);
     }
 
     @Operation(summary = "Find recipe by its id")
@@ -88,15 +88,15 @@ public class RecipeController {
             @ApiResponse(responseCode = "400" , description = "Recipe could not found", content= @Content)
     })
     @GetMapping("/{recipeId}")
-    public ResponseEntity<RestResponse> getRecipeById(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId) {
+    public ResponseEntity<RecipeDto> getRecipeById(@Parameter(description = "id of recipe to be updated") @PathVariable("recipeId") Long recipeId) {
         LOG.info("Get Recipe By Id");
-        return ResponseEntity.ok(recipeService.findRecipe(recipeId));
+        return new ResponseEntity<>(recipeService.findRecipe(recipeId), HttpStatus.OK);
     }
 
     @Operation(summary = "Search recipes with criteria")
     @ApiResponse(responseCode = "200", description = "Found the recipes", content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Recipe.class))})
     @GetMapping("/search")
-    public ResponseEntity<RestResponse> searchRecipes(@Parameter(description = "is Recipe vegetarian") @RequestParam(value = "isVegetarian", required = false) Boolean isVegetarian,
+    public ResponseEntity<Set<RecipeDto>> searchRecipes(@Parameter(description = "is Recipe vegetarian") @RequestParam(value = "isVegetarian", required = false) Boolean isVegetarian,
                                                       @Parameter(description = "Number of servings of recipe") @RequestParam(value = "servingNumber", required = false) Integer servingNumber,
                                                       @Parameter(description = "ingredient to be included") @RequestParam(value = "ingredientName", required = false) String ingredientName,
                                                       @Parameter(description = "ingredient to be excluded") @RequestParam(value = "excludeIngredientName", required = false) String excludeIngredientName,
@@ -125,7 +125,6 @@ public class RecipeController {
             criteriaList.add(new SearchCriteria("description", SearchOperation.CONTAINS, instructionText));
         }
 
-        return ResponseEntity.ok(recipeService.searchRecipes(criteriaList));
-
+        return new ResponseEntity<>(recipeService.searchRecipes(criteriaList), HttpStatus.OK);
     }
 }

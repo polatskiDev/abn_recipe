@@ -1,7 +1,6 @@
 package nl.abnamro.assessment.recipe.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.abnamro.assessment.recipe.message.RestResponse;
 import nl.abnamro.assessment.recipe.model.IngredientsDto;
 import nl.abnamro.assessment.recipe.model.InstructionsDto;
 import nl.abnamro.assessment.recipe.model.RecipeDto;
@@ -11,12 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +40,7 @@ public class RecipeControllerTest {
     @Test
     void testFindAll() throws Exception {
 
-        given(recipeService.findAll()).willReturn(new RestResponse(List.of(getValidRecipeDto()), HttpStatus.OK));
+        given(recipeService.findAll()).willReturn(Set.of(getValidRecipeDto()));
 
         mockMvc.perform(get("/api/v1/recipe").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -55,19 +52,19 @@ public class RecipeControllerTest {
 
         String recipeDtoJson = objectMapper.writeValueAsString(recipeDto);
 
-        given(recipeService.saveRecipe(any())).willReturn(new RestResponse(getValidRecipeDto(), HttpStatus.CREATED));
+        given(recipeService.saveRecipe(any())).willReturn(getValidRecipeDto());
 
         mockMvc.perform(post("/api/v1/recipe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(recipeDtoJson))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
     }
 
     @Test
     void testUpdateRecipe() throws Exception {
 
         given(recipeService.updateRecipe(any(), any()))
-                .willReturn(new RestResponse(getValidRecipeDto(), HttpStatus.NO_CONTENT));
+                .willReturn(getValidRecipeDto());
 
         RecipeDto recipeDto = getValidRecipeDto();
         String recipeDtoJson = objectMapper.writeValueAsString(recipeDto);
@@ -75,23 +72,23 @@ public class RecipeControllerTest {
         mockMvc.perform(put("/api/v1/recipe/" + 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(recipeDtoJson))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void testDeleteRecipe() throws Exception {
 
         given(recipeService.deleteRecipe(any()))
-                .willReturn(new RestResponse(null, HttpStatus.NO_CONTENT));
+                .willReturn(null);
 
         mockMvc.perform(delete("/api/v1/recipe/" + 1L).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void testGetRecipeById() throws Exception {
         //given
-        given(recipeService.findRecipe(any())).willReturn(new RestResponse(getValidRecipeDto(), HttpStatus.OK));
+        given(recipeService.findRecipe(any())).willReturn(getValidRecipeDto());
 
         mockMvc.perform(get("/api/v1/recipe/" + 1L).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -100,7 +97,7 @@ public class RecipeControllerTest {
     @Test
     public void searchRecipesTest() throws Exception {
 
-        given(recipeService.searchRecipes(any())).willReturn(new RestResponse(List.of(getValidRecipeDto()), HttpStatus.OK));
+        given(recipeService.searchRecipes(any())).willReturn(Set.of(getValidRecipeDto()));
 
 
         mockMvc.perform(get("/api/v1/recipe/search")
